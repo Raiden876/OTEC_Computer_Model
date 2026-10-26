@@ -1,0 +1,4 @@
+# Three runtime packages, with exact versions for reproducible calculations.
+CoolProp==8.0.0
+gsw==3.6.23
+numpy==2.5.4
