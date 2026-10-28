@@ -61,7 +61,9 @@ class StreamlitBehavior(unittest.TestCase):
         after_charts = chart_payloads()
         after_tables = [e.proto.body for e in app.get("html") if "<table" in e.proto.body]
         self.assertEqual(len(after_charts), 9)
-        self.assertEqual(len(after_tables), 4)
+        self.assertEqual(len(after_tables), 5)
+        ammonia_table = next(t for t in after_tables if "Ammonia circulation" in t)
+        self.assertIn(f'{app.session_state["result"]["wf_mass_kg_s"]:,.1f}', ammonia_table)
         self.assertTrue(all(a != b for a, b in zip(before_charts, after_charts)))
         self.assertTrue(all(a != b for a, b in zip(before_tables, after_tables)))
 

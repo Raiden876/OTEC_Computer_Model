@@ -501,20 +501,20 @@ if st.session_state.comparison:
     with st.container(border=True):
         st.markdown("#### Capacity comparison")
         rows = []
-        export = [["target_mw", "basis", "net_mw", "gross_mw", "warm_flow_m3_s", "cold_flow_m3_s", "evaporator_area_m2", "condenser_area_m2", "inputs_json", "error"]]
+        export = [["target_mw", "basis", "net_mw", "gross_mw", "ammonia_flow_kg_s", "warm_flow_m3_s", "cold_flow_m3_s", "evaporator_area_m2", "condenser_area_m2", "inputs_json", "error"]]
         for case in st.session_state.comparison:
             if "result" in case:
                 c = case["result"]
-                rows.append([f'{case["capacity"]} MW', n(c["net_mw"]), n(c["gross_mw"]),
+                rows.append([f'{case["capacity"]} MW', n(c["net_mw"]), n(c["gross_mw"]), n(c["wf_mass_kg_s"], 1),
                              f'{n(c["warm_hydraulics"]["volume_m3_s"],2)} / {n(c["cold_hydraulics"]["volume_m3_s"],2)}',
                              n((c["evaporator"]["area_m2"] + c["condenser"]["area_m2"]) / 1000, 1),
                              f'{int(c["inputs"]["cold_pipes"])} × {c["inputs"]["cold_diameter_m"]:.2f} m'])
-                export.append([case["capacity"], c["inputs"]["capacity_basis"], c["net_mw"], c["gross_mw"],
+                export.append([case["capacity"], c["inputs"]["capacity_basis"], c["net_mw"], c["gross_mw"], c["wf_mass_kg_s"],
                                c["warm_hydraulics"]["volume_m3_s"], c["cold_hydraulics"]["volume_m3_s"],
                                c["evaporator"]["area_m2"], c["condenser"]["area_m2"], json.dumps(c["inputs"]), ""])
             else:
-                rows.append([f'{case["capacity"]} MW', "Infeasible", "—", "—", "—", "—"])
-                export.append([case["capacity"], d["capacity_basis"], "", "", "", "", "", "", "", case["error"]])
+                rows.append([f'{case["capacity"]} MW', "Infeasible", "—", "—", "—", "—", "—"])
+                export.append([case["capacity"], d["capacity_basis"], "", "", "", "", "", "", "", "", case["error"]])
                 st.warning(f'{case["capacity"]} MW: {case["error"]}')
         if any("result" in case for case in st.session_state.comparison):
             power_comparison, flow_comparison, area_comparison = st.tabs(["Gross & net electricity", "Seawater requirements", "Heat-exchanger area"])
@@ -523,7 +523,7 @@ if st.session_state.comparison:
                     interactive_chart(capacity_comparison(st.session_state.comparison, metric), "capacity_" + metric,
                                       "Comparison of the feasible 1, 10, 25 and 50 MW designs; " + metric + " quantities shown on a common scale.")
         with st.expander("Comparison values and pipe layouts"):
-            st.html(table(["Target", "Net · MW", "Gross · MW", "Warm / cold · m³/s", "HX area · 10³ m²", "Pipes / circuit"], rows))
+            st.html(table(["Target", "Net · MW", "Gross · MW", "Ammonia · kg/s", "Warm / cold · m³/s", "HX area · 10³ m²", "Pipes / circuit"], rows))
         st.caption("Independent design sizing at the same source conditions. The 1, 10, 25, and 50 MW reference cases use the illustrative pipe-scaling rule and newly sized exchangers; these are not operating points of the same installed plant.")
         st.download_button("Export comparison CSV", as_csv(export), "otec-capacity-comparison.csv", "text/csv", on_click="ignore")
 
@@ -541,7 +541,8 @@ with st.container(border=True, key=f"plant_results_{st.session_state.result_revi
                            + st.session_state.error)
             interactive_chart(electrical_waterfall(r), "electrical_waterfall",
                               "Gross output, pump and auxiliary deductions, and net electrical output in MW.")
-            st.caption("Values show the applied design. Draft edits appear here after you click Apply edits & calculate.")
+            st.html(table(["Plant requirement", "Value"], [["Ammonia circulation · kg/s", n(r["wf_mass_kg_s"], 1)]]))
+            st.caption("Ammonia circulates in a closed loop. This is the flow rate for the applied design, not the total ammonia charge; the model does not calculate inventory. Draft edits apply after calculation.")
         with right:
             st.markdown("#### Required heat exchangers")
             area_tab, duty_tab = st.tabs(["Surface area", "Thermal duty"], key="exchanger_tabs", on_change="rerun")
